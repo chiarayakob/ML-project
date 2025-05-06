@@ -10,16 +10,25 @@ f = np . random . multivariate_normal ( mu , Cov , n )
 
 #TASK 1
 
-# Träningsdata
 # Parametrar
 w0, w1 = -1.2, 0.9
 sigma2 = 0.2  # testa även 0.1, 0.4, 0.8, Fråga 7
 N_train = 100 # testa även 10, 20, Fråga 2
 
+# Träningsdata
 # Skapa x (träningsinput) som går mellan 1 och -1
 x_train = np.linspace(-1, 1, N_train)
 # Skapa t (träningsoutput) med fel/brus ε
 t_train = w0 + w1 * x_train + np.random.normal(0, np.sqrt(sigma2), size=N_train)
+
+# Testdata
+# Skapa x = [-1.5, -1.4, …, -1.1] U [1.1, …, 1.5]
+x_test = np.concatenate([
+    np.linspace(-1.5, -1.1, 5),
+    np.linspace(1.1, 1.5, 5)
+])
+# Skapa t på samma sätt som tidigare
+t_test = w0 + w1 * x_test + np.random.normal(0, np.sqrt(sigma2), size=len(x_test))
 
 """ 1. Beräkna prior
 	2.	Beräkna likelihood
