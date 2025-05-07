@@ -4,8 +4,9 @@ import matplotlib . pyplot as plt
 from math import pi
 from scipy . stats import multivariate_normal
 from scipy . spatial . distance import cdist
+from scipy.stats import norm
 # To draw n samples from multivariate Gaussian distribution with mu and Cov:
-#f = np . random . multivariate_normal ( mu , Cov , n )
+# f = np . random . multivariate_normal ( mu , Cov , n )
 
 
 #TASK 1
@@ -30,35 +31,90 @@ x_test = np.concatenate([
 # Skapa t på samma sätt som tidigare
 t_test = w0 + w1 * x_test + np.random.normal(0, np.sqrt(sigma2), size=len(x_test))
 
-# 1.  Beräkna prior
+# === PLOT ===
+w0list = np . linspace ( -3.0 , 2.0 , 200)
+w1list = np . linspace ( -2.0 , 4.0 , 200)
+W0arr , W1arr = np . meshgrid ( w0list , w1list )
+pos = np . dstack (( W0arr , W1arr ))
+
+
+# 1.  Beräkna prior Eq. 23
 
 alpha = 2
 mean_prior = np.array([0,0])
 variance_prior = (1/alpha) * np.identity(2)
 
-prior_distribution =  multivariate_normal(mean=mean_prior, cov=variance_prior)
-
-# Plot
-w0list = np . linspace ( -3.0 , 2.0 , 200)
-w1list = np . linspace ( -2.0 , 2.0 , 200)
-W0arr , W1arr = np . meshgrid ( w0list , w1list )
-pos = np . dstack (( W0arr , W1arr ))
-
+prior_distribution =  multivariate_normal(mean=mean_prior, cov=variance_prior) # Beräknar normalfördelnigen
 prior_pdf = prior_distribution.pdf(pos)
 
+"""
 plt . contour ( W0arr , W1arr , prior_pdf )
 plt . show ()
+"""
+# 2.	Beräkna likelihood Eq. 17
+X_ext = np.vstack((np.ones_like(x_train), x_train)).T #  Skapa designmatris
+# Förbered en tom 2D-array som ska fyllas med likelihood-värden
+# Storlek matchar rutnätet av w₀ och w₁ (200 × 200)
+likelihood = np.zeros_like(W0arr)
 
-# 2.	Beräkna likelihood
+# Loopa över alla kombinationer av w₀ och w₁ i rutnätet
+for i in range(W0arr.shape[0]):
+    for j in range(W0arr.shape[1]):
+        w = np.array([W0arr[i, j], W1arr[i, j]]) # w = [w0, w1] från rutnätet
+        mu = X_ext @ w # multiplisera matrisen X_ext med vektorn w
+        probs = norm.pdf(t_train, loc=mu, scale=np.sqrt(sigma2)) # Beräknar sannolikheten för varje t_n enligt N(t_n | μ_n, σ²), antar oberoende normalfördelningar
+        likelihood[i, j] = np.prod(probs)# Total likelihood = produkt av alla individuella sannolikheter
 
-mean_likelihood = np.array([w0,w1])
 
-likelihood =  multivariate_normal(mean = mean_likelihood, cov = sigma2)
-likelihood_pdf = likelihood (pos)
-plt . contour ( W0arr , W1arr , likelihood_pdf )
-plt . show ()
+"""
+plt.figure(figsize=(6, 5))
+plt.contour(W0arr, W1arr, likelihood)
+plt.title("Likelihood p(t | w)")
+plt.xlabel("w₀")
+plt.ylabel("w₁")
+plt.grid(True)
+plt.show()
+"""
 
-"""	3.	Beräkna posterior
+# 3.	Beräkna posterior
+beta = 1 / sigma2  # precision för likelihood
+
+I = np.identity(2)
+S_N_inv = alpha * I + beta * X_ext.T @ X_ext  # Eq. 28, precisionen (inversen av kovarians) för posteriorn
+S_N = np.linalg.inv(S_N_inv) # kovariansen S_N för posteriorn
+
+m_N = beta * S_N @ X_ext.T @ t_train          # Eq. 27, medelvärdet för posteriorn
+
+# Skapa posteriorfördelning
+posterior_distribution = multivariate_normal(mean=m_N, cov=S_N)
+posterior_pdf = posterior_distribution.pdf(pos)
+
+# === PLOT ===
+fig, axs = plt.subplots(1, 3, figsize=(18, 5))
+
+axs[0].contour(W0arr, W1arr, prior_pdf)
+axs[0].set_title("Priorfördelning p(w)")
+axs[0].set_xlabel("w₀")
+axs[0].set_ylabel("w₁")
+axs[0].grid(True)
+
+axs[1].contour(W0arr, W1arr, likelihood)
+axs[1].set_title("Likelihood p(t | w)")
+axs[1].set_xlabel("w₀")
+axs[1].set_ylabel("w₁")
+axs[1].grid(True)
+
+axs[2].contour(W0arr, W1arr, posterior_pdf)
+axs[2].set_title("Posterior p(w | t)")
+axs[2].set_xlabel("w₀")
+axs[2].set_ylabel("w₁")
+axs[2].grid(True)
+
+plt.tight_layout()
+plt.show()
+
+
+"""
 	4.	Dra samples från posteriors och rita linjer
 	5.	Gör Bayesianska prediktioner med osäkerhet
 	6.	Gör ML-prediktion
