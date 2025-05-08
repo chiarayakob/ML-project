@@ -90,35 +90,35 @@ posterior_distribution = multivariate_normal(mean=m_N, cov=S_N)
 posterior_pdf = posterior_distribution.pdf(pos)
 
 # === PLOT ===
-fig, axs = plt.subplots(1, 4, figsize=(18, 5))
+fig, axs = plt.subplots(2, 3, figsize=(15, 10))  # 2 rader, 3 kolumner
 
-axs[0].contour(W0arr, W1arr, prior_pdf)
-axs[0].set_title("Priorfördelning p(w)")
-axs[0].set_xlabel("w₀")
-axs[0].set_ylabel("w₁")
-axs[0].grid(True)
+axs[0, 0].contour(W0arr, W1arr, prior_pdf)
+axs[0, 0].set_title("Priorfördelning p(w)")
+axs[0, 0].set_xlabel("w₀")
+axs[0, 0].set_ylabel("w₁")
+axs[0, 0].grid(True)
 
-axs[1].contour(W0arr, W1arr, likelihood)
-axs[1].set_title("Likelihood p(t | w)")
-axs[1].set_xlabel("w₀")
-axs[1].set_ylabel("w₁")
-axs[1].grid(True)
+axs[0, 1].contour(W0arr, W1arr, likelihood)
+axs[0, 1].set_title("Likelihood p(t | w)")
+axs[0, 1].set_xlabel("w₀")
+axs[0, 1].set_ylabel("w₁")
+axs[0, 1].grid(True)
 
-axs[2].contour(W0arr, W1arr, posterior_pdf)
-axs[2].set_title("Posterior p(w | t)")
-axs[2].set_xlabel("w₀")
-axs[2].set_ylabel("w₁")
-axs[2].grid(True)
+axs[0, 2].contour(W0arr, W1arr, posterior_pdf)
+axs[0, 2].set_title("Posterior p(w | t)")
+axs[0, 2].set_xlabel("w₀")
+axs[0, 2].set_ylabel("w₁")
+axs[0, 2].grid(True)
 
 
-axs[3].scatter(x_train, t_train, color='black', alpha=0.5, label="Träningsdata")
-axs[3].scatter(x_test, t_test, color='red', marker='x', label="Testdata")
+axs[1, 0].scatter(x_train, t_train, color='black', alpha=0.5, label="Träningsdata")
+axs[1, 0].scatter(x_test, t_test, color='red', marker='x', label="Testdata")
 
-axs[3].set_title("Modeller från posteriorn")
-axs[3].set_xlabel("x")
-axs[3].set_ylabel("y")
-axs[3].legend()
-axs[3].grid(True)
+axs[1, 0].set_title("Modeller från posteriorn")
+axs[1, 0].set_xlabel("x")
+axs[1, 0].set_ylabel("y")
+axs[1, 0].legend()
+axs[1, 0].grid(True)
 
 # 4.	Dra model samples från posteriors och rita linjer
 
@@ -130,7 +130,29 @@ x_plot = np.linspace(-1.6, 1.6, 100)
 for w_sample in samples:
     w0_sample, w1_sample = w_sample
     y_plot = w0_sample + w1_sample * x_plot
-    axs[3].plot(x_plot, y_plot, label=f"w = [{w0_sample:.2f}, {w1_sample:.2f}]") 
+    axs[1, 0].plot(x_plot, y_plot, label=f"w = [{w0_sample:.2f}, {w1_sample:.2f}]")
+
+# 5.	Gör Bayesianska prediktioner med osäkerhet
+
+# Skapa designmatris för testpunkter (phi(x) = [1, x])
+X_test_ext = np.vstack((np.ones_like(x_test), x_test)).T
+
+# Prediktionens medelvärde och osäkerhet
+mu_test = X_test_ext @ m_N
+sigma2_test = np.array([1 / beta + x.T @ S_N @ x for x in X_test_ext])
+std_test = np.sqrt(sigma2_test)
+
+# Rita i subplot 5
+axs[1, 1].plot(x_test, mu_test, label="Bayesianskt medel", color='blue')
+axs[1, 1].fill_between(x_test, mu_test - std_test, mu_test + std_test, alpha=0.3, color='blue', label="±1 std")
+axs[1, 1].scatter(x_test, t_test, color='red', marker='x', label="Testdata")
+axs[1, 1].scatter(x_train, t_train, color='black', alpha=0.2, label="Träningsdata")
+
+axs[1, 1].set_title("Bayesianska prediktioner")
+axs[1, 1].set_xlabel("x")
+axs[1, 1].set_ylabel("t")
+axs[1, 1].legend()
+axs[1, 1].grid(True)
 
 plt.tight_layout()
 plt.show()
@@ -138,7 +160,8 @@ plt.show()
 
 
 
-"""	5.	Gör Bayesianska prediktioner med osäkerhet
+
+"""
 	6.	Gör ML-prediktion
 	7.	Visualisera och jämför
 """
