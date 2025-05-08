@@ -90,7 +90,7 @@ posterior_distribution = multivariate_normal(mean=m_N, cov=S_N)
 posterior_pdf = posterior_distribution.pdf(pos)
 
 # === PLOT ===
-fig, axs = plt.subplots(1, 3, figsize=(18, 5))
+fig, axs = plt.subplots(1, 4, figsize=(18, 5))
 
 axs[0].contour(W0arr, W1arr, prior_pdf)
 axs[0].set_title("Priorfördelning p(w)")
@@ -110,13 +110,35 @@ axs[2].set_xlabel("w₀")
 axs[2].set_ylabel("w₁")
 axs[2].grid(True)
 
+
+axs[3].scatter(x_train, t_train, color='black', alpha=0.5, label="Träningsdata")
+axs[3].scatter(x_test, t_test, color='red', marker='x', label="Testdata")
+
+axs[3].set_title("Modeller från posteriorn")
+axs[3].set_xlabel("x")
+axs[3].set_ylabel("y")
+axs[3].legend()
+axs[3].grid(True)
+
+# 4.	Dra model samples från posteriors och rita linjer
+
+# Dra 5 samples från posteriorn
+samples = posterior_distribution.rvs(size=5)
+x_plot = np.linspace(-1.6, 1.6, 100)
+
+# Rita varje sampled modell i subplot 4
+for w_sample in samples:
+    w0_sample, w1_sample = w_sample
+    y_plot = w0_sample + w1_sample * x_plot
+    axs[3].plot(x_plot, y_plot, label=f"w = [{w0_sample:.2f}, {w1_sample:.2f}]") 
+
 plt.tight_layout()
 plt.show()
 
 
-"""
-	4.	Dra samples från posteriors och rita linjer
-	5.	Gör Bayesianska prediktioner med osäkerhet
+
+
+"""	5.	Gör Bayesianska prediktioner med osäkerhet
 	6.	Gör ML-prediktion
 	7.	Visualisera och jämför
 """
