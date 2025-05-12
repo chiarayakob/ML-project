@@ -47,3 +47,28 @@ x_test = np.vstack((x1_flat[test_mask], x2_flat[test_mask])).T  # (N_test, 2), V
 t_test = t_flat[test_mask]
 sigma_extra = 0.3  # kan justera detta
 t_test += np.random.normal(0, sigma_extra, size=t_test.shape)
+
+# 3. ML-regression
+
+# Designfunktion: phi(x) = [1, x1^2, x2^3]
+def design_matrix(x):
+    x1 = x[:, 0]
+    x2 = x[:, 1]
+    return np.vstack((np.ones(len(x1)), x1**2, x2**3)).T  # shape: (N, 3)
+
+# Skapa designmatriser
+Phi_train = design_matrix(x_train)
+Phi_test = design_matrix(x_test)
+
+w_ML = np.linalg.inv(Phi_train.T @ Phi_train) @ Phi_train.T @ t_train # Eq. 19: w_ML = (ΦᵀΦ)^(-1) Φᵀ t
+
+# Eq. 20: β_ML = N / sum of squared residuals
+residuals = t_train - Phi_train @ w_ML
+sigma2_ML = np.mean(residuals**2)
+beta_ML = 1 / sigma2_ML
+
+t_pred = Phi_test @ w_ML # Prediktioner för testdata
+
+# MSE mellan prediktioner och verkliga testvärden
+MSE = np.mean((t_pred - t_test)**2)
+print(f"ML Mean Squared Error on test data: {MSE:.4f}")
