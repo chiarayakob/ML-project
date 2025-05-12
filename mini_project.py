@@ -72,3 +72,71 @@ t_pred = Phi_test @ w_ML # Prediktioner för testdata
 # MSE mellan prediktioner och verkliga testvärden
 MSE = np.mean((t_pred - t_test)**2)
 print(f"ML Mean Squared Error on test data: {MSE:.4f}")
+
+# 4. Bayesiansk regression för olika alpha
+
+alphas = [0.3, 0.7, 2.0]
+
+for alpha in alphas:
+    # Eq. 30: S_N = (αI + β ΦᵀΦ)^(-1)
+    I = np.identity(Phi_train.shape[1])
+    S_N_inv = alpha * I + beta_ML * (Phi_train.T @ Phi_train)
+    S_N = np.linalg.inv(S_N_inv)
+
+    # Eq. 30: m_N = β S_N Φᵀ t
+    m_N = beta_ML * S_N @ Phi_train.T @ t_train
+
+    # Eq. 31: prediktioner och varians
+    mu_test = Phi_test @ m_N
+    sigma2_test = np.sum(Phi_test @ S_N * Phi_test, axis=1) + 1 / beta_ML
+    std_test = np.sqrt(sigma2_test)
+
+    # Beräkna MSE
+    mse_bayes = np.mean((mu_test - t_test)**2)
+
+    print(f"Bayesian regression (alpha = {alpha}):")
+    print(f"  MSE on test data: {mse_bayes:.4f}")
+    print(f"  Mean predictive std: {np.mean(std_test):.4f}")
+    print("---")
+
+# 6.  Undersöka hur Bayesiansk modellens osäkerhet och prestanda (MSE) varierar beroende på: Prior precisionen alpha Databruset sigma
+
+sigma_vals = [0.3, 0.5, 0.8, 1.2]
+
+for sigma in sigma_vals:
+    print(f"\n===== σ² = {sigma**2:.2f} =====")
+
+    # Nytt brus till t_noisy, t_train och t_test
+    noise = np.random.normal(0, sigma, size=X1.shape)
+    t_noisy = t_clean + noise
+    t_flat = t_noisy.flatten()
+    t_train = t_flat[train_mask]
+    t_test = t_flat[test_mask]
+
+    Phi_train = design_matrix(x_train)
+    Phi_test = design_matrix(x_test)
+
+    # Uppdatera beta
+    residuals = t_train - Phi_train @ w_ML
+    sigma2_ML = np.mean(residuals**2)
+    beta_ML = 1 / sigma2_ML
+
+    for alpha in alphas:
+        I = np.identity(Phi_train.shape[1])
+        S_N_inv = alpha * I + beta_ML * Phi_train.T @ Phi_train
+        S_N = np.linalg.inv(S_N_inv)
+        m_N = beta_ML * S_N @ Phi_train.T @ t_train
+
+        # --- Prediktioner för TEST ---
+        mu_test = Phi_test @ m_N
+        sigma2_test = np.sum(Phi_test @ S_N * Phi_test, axis=1) + 1 / beta_ML
+        mse_test = np.mean((mu_test - t_test) ** 2)
+
+        # --- Prediktioner för TRAIN ---
+        mu_train = Phi_train @ m_N
+        sigma2_train = np.sum(Phi_train @ S_N * Phi_train, axis=1) + 1 / beta_ML
+        mse_train = np.mean((mu_train - t_train) ** 2)
+
+        print(f"α = {alpha}")
+        print(f"  Train MSE: {mse_train:.4f},  Mean variance: {np.mean(sigma2_train):.4f}")
+        print(f"  Test  MSE: {mse_test:.4f},  Mean variance: {np.mean(sigma2_test):.4f}")
