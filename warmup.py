@@ -13,7 +13,7 @@ from scipy.stats import norm
 
 # Parametrar
 w0, w1 = -1.2, 0.9
-sigma2 = 0.2  # testa även 0.1, 0.4, 0.8, Fråga 7
+sigma2 = 0.8  # testa även 0.1, 0.4, 0.8, Fråga 7
 N_train = 100 # testa även 10, 20
 
 # Träningsdata
@@ -52,7 +52,7 @@ plt . contour ( W0arr , W1arr , prior_pdf )
 plt . show ()
 """
 # 2.	Beräkna likelihood Eq. 17
-X_ext = np.vstack((np.ones_like(x_train), x_train)).T #  Skapa designmatris
+X_ext = np.vstack((np.ones_like(x_train), x_train)).T # Skapa designmatris
 # Förbered en tom 2D-array som ska fyllas med likelihood-värden
 # Storlek matchar rutnätet av w₀ och w₁ (200 × 200)
 likelihood = np.zeros_like(W0arr)
@@ -138,8 +138,8 @@ for w_sample in samples:
 X_test_ext = np.vstack((np.ones_like(x_test), x_test)).T
 
 # Prediktionens medelvärde och osäkerhet
-mu_test = X_test_ext @ m_N
-sigma2_test = np.array([1 / beta + x.T @ S_N @ x for x in X_test_ext])
+mu_test = X_test_ext @ m_N # eq33
+sigma2_test = np.array([1 / beta + x.T @ S_N @ x for x in X_test_ext]) #eq34
 std_test = np.sqrt(sigma2_test)
 
 # Rita i subplot 5
@@ -154,14 +154,30 @@ axs[1, 1].set_ylabel("t")
 axs[1, 1].legend()
 axs[1, 1].grid(True)
 
+# 6.	Gör ML-prediktion
+
+# 1. Beräkna ML-vikter
+w_ml = np.linalg.inv(X_ext.T @ X_ext) @ X_ext.T @ t_train  # Eq. från sektion 1.3
+w0_ml, w1_ml = w_ml
+
+# 2. Skapa x-värden och prediktion med ML
+x_plot = np.linspace(-1.6, 1.6, 100)
+y_ml = w0_ml + w1_ml * x_plot
+
+axs[1, 2].plot(x_plot, y_ml, label="ML-prediktion", color='green')
+axs[1, 2].scatter(x_train, t_train, color='black', alpha=0.3, label="Träningsdata")
+axs[1, 2].scatter(x_test, t_test, color='red', marker='x', label="Testdata")
+
+axs[1, 2].set_title("ML-prediktion")
+axs[1, 2].set_xlabel("x")
+axs[1, 2].set_ylabel("t")
+axs[1, 2].legend()
+axs[1, 2].grid(True)
+
 plt.tight_layout()
 plt.show()
 
 
 
-
-
-"""
-	6.	Gör ML-prediktion
-	7.	Visualisera och jämför
+"""	7.	Visualisera och jämför
 """
